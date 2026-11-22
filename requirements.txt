@@ -1,0 +1,36 @@
+# Core Framework
+fastapi
+uvicorn[standard]
+python-multipart
+
+# LLM & Embeddings
+groq
+sentence-transformers
+torch
+
+# Vector DB
+chromadb
+
+# Document Processing
+pypdf2
+python-docx
+python-pptx
+openpyxl
+pandas
+markdown
+beautifulsoup4
+python-magic
+
+# Caching
+redis
+
+# Utilities
+pydantic
+pydantic-settings
+python-dotenv
+loguru
+numpy
+
+# Testing
+pytest
+httpx

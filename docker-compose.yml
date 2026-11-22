@@ -1,0 +1,133 @@
+# ============================================================
+# Docker Compose Configuration
+# ============================================================
+# 
+# Services:
+# - rag-api: FastAPI application
+# - redis: Semantic cache storage
+# - (Optional) nginx: Reverse proxy
+# 
+# Usage:
+#   docker-compose up -d          # Start all services
+#   docker-compose logs -f        # View logs
+#   docker-compose down           # Stop all services
+# ============================================================
+
+version: '3.8'
+
+services:
+  # ============================================================
+  # Redis Cache
+  # ============================================================
+  redis:
+    image: redis:7-alpine
+    container_name: rag-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rag-network
+
+  # ============================================================
+  # RAG API Service
+  # ============================================================
+  rag-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rag-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      # API Keys (load from .env file)
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      
+      # Model Configuration
+      - EMBEDDING_MODEL=all-MiniLM-L6-v2
+      - LLM_MODEL=openai/gpt-oss-120b
+      
+      # Vector DB
+      - CHROMA_PERSIST_DIR=/app/data/vector_db
+      - COLLECTION_NAME=rag_documents
+      
+      # Cache Configuration
+      - CACHE_SIMILARITY_THRESHOLD=0.95
+      - CACHE_ENABLED=true
+      - REDIS_URL=redis://redis:6379
+      
+      # Application
+      - DEBUG=false
+      - LOG_LEVEL=INFO
+      - MAX_FILE_SIZE_MB=10
+      
+      # Chunking
+      - CHUNK_SIZE=1000
+      - CHUNK_OVERLAP=200
+      - TOP_K_RESULTS=3
+      
+    volumes:
+      # Persist vector database
+      - vector-db-data:/app/data/vector_db
+      # Persist uploaded documents
+      - documents-data:/app/data/documents
+      # Logs
+      - ./logs:/app/logs
+      
+    depends_on:
+      redis:
+        condition: service_healthy
+        
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+      
+    networks:
+      - rag-network
+
+  # ============================================================
+  # Nginx Reverse Proxy (Optional)
+  # ============================================================
+  # Uncomment to add nginx reverse proxy
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: rag-nginx
+  #   restart: unless-stopped
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+  #   depends_on:
+  #     - rag-api
+  #   networks:
+  #     - rag-network
+
+# ============================================================
+# Volumes
+# ============================================================
+volumes:
+  redis-data:
+    driver: local
+  vector-db-data:
+    driver: local
+  documents-data:
+    driver: local
+
+# ============================================================
+# Networks
+# ============================================================
+networks:
+  rag-network:
+    driver: bridge

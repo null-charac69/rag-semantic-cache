@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+*.egg
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Data & logs
+data/
+logs/
+*.db
+*.sqlite
+*.log
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# IDE & editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Docker (not needed in image)
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Development & misc
+run.sh
+*.pdf
+*.md
+docs/
